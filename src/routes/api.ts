@@ -161,6 +161,7 @@ api.get('/faqs', async (c) => {
   const { DB } = c.env;
   const disease_id = c.req.query('disease_id');
   const medication_id = c.req.query('medication_id');
+  const category = c.req.query('category');
 
   try {
     let sql = 'SELECT * FROM faqs WHERE 1=1';
@@ -176,12 +177,66 @@ api.get('/faqs', async (c) => {
       params.push(medication_id);
     }
 
-    sql += ' ORDER BY priority DESC, created_at DESC';
+    if (category) {
+      sql += ' AND category LIKE ?';
+      params.push(`%${category}%`);
+    }
+
+    sql += ' ORDER BY priority DESC, created_at DESC LIMIT 50';
 
     const result = await DB.prepare(sql).bind(...params).all();
     return c.json(result.results);
   } catch (error) {
     return c.json({ error: 'Failed to fetch FAQs' }, 500);
+  }
+});
+
+// 患者指導資料取得API
+api.get('/education-materials', async (c) => {
+  const { DB } = c.env;
+  const disease_id = c.req.query('disease_id');
+  const category = c.req.query('category');
+  const question_type = c.req.query('question_type');
+
+  try {
+    let sql = 'SELECT * FROM patient_education_materials WHERE 1=1';
+    const params: string[] = [];
+
+    if (disease_id) {
+      sql += ' AND disease_id = ?';
+      params.push(disease_id);
+    }
+
+    if (category) {
+      sql += ' AND category = ?';
+      params.push(category);
+    }
+
+    if (question_type) {
+      sql += ' AND question_type = ?';
+      params.push(question_type);
+    }
+
+    sql += ' ORDER BY created_at DESC LIMIT 50';
+
+    const result = await DB.prepare(sql).bind(...params).all();
+    return c.json(result.results);
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch education materials' }, 500);
+  }
+});
+
+// 心不全予後改善薬一覧取得API
+api.get('/hf-prognostic-drugs', async (c) => {
+  const { DB } = c.env;
+
+  try {
+    const result = await DB.prepare(
+      'SELECT * FROM hf_prognostic_drugs ORDER BY drug_class'
+    ).all();
+    return c.json(result.results);
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch HF prognostic drugs' }, 500);
   }
 });
 

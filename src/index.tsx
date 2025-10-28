@@ -393,6 +393,87 @@ app.get('/', (c) => {
                             </div>
                         </div>
 
+                        <!-- 参考資料セクション -->
+                        <div class="mb-8 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-700 flex items-center">
+                                <i class="fas fa-book-medical mr-2 text-blue-600"></i>
+                                参考資料
+                            </h3>
+                            
+                            <!-- タブナビゲーション -->
+                            <div class="flex border-b border-blue-300 mb-4">
+                                <button id="faqTabBtn" class="reference-tab px-4 py-2 font-medium text-blue-600 border-b-2 border-blue-600">
+                                    <i class="fas fa-question-circle mr-2"></i>よくある質問（FAQ）
+                                </button>
+                                <button id="educationTabBtn" class="reference-tab px-4 py-2 font-medium text-gray-600 hover:text-blue-600">
+                                    <i class="fas fa-graduation-cap mr-2"></i>患者指導資料
+                                </button>
+                            </div>
+
+                            <!-- FAQコンテンツ -->
+                            <div id="faqContent" class="reference-content">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">カテゴリで絞り込み</label>
+                                    <select id="faqCategoryFilter" class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="">すべて</option>
+                                        <option value="hypertension">高血圧</option>
+                                        <option value="diabetes">糖尿病</option>
+                                        <option value="heart_failure">心不全</option>
+                                        <option value="dyslipidemia">脂質異常症</option>
+                                        <option value="ckd">慢性腎臓病</option>
+                                        <option value="arrhythmia">不整脈</option>
+                                    </select>
+                                </div>
+                                <div id="faqList" class="space-y-3 max-h-96 overflow-y-auto">
+                                    <div class="text-center text-gray-500 py-8">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <p>FAQを読み込んでいます...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 患者指導資料コンテンツ -->
+                            <div id="educationContent" class="reference-content hidden">
+                                <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">疾患で絞り込み</label>
+                                        <select id="educationDiseaseFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="">すべて</option>
+                                            <option value="1">高血圧</option>
+                                            <option value="2">糖尿病</option>
+                                            <option value="9">心不全</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">カテゴリで絞り込み</label>
+                                        <select id="educationCategoryFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="">すべて</option>
+                                            <option value="lifestyle">生活習慣</option>
+                                            <option value="monitoring">モニタリング</option>
+                                            <option value="medication">服薬</option>
+                                            <option value="diet">食事</option>
+                                            <option value="exercise">運動</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">質問タイプ</label>
+                                        <select id="educationQuestionTypeFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="">すべて</option>
+                                            <option value="basic_knowledge">基礎知識</option>
+                                            <option value="patient_concern">患者の懸念</option>
+                                            <option value="lifestyle_guidance">生活指導</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="educationList" class="space-y-3 max-h-96 overflow-y-auto">
+                                    <div class="text-center text-gray-500 py-8">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <p>患者指導資料を読み込んでいます...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="flex justify-between">
                             <button class="prev-phase bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition" data-prev="3">
                                 <i class="fas fa-arrow-left mr-2"></i>前へ

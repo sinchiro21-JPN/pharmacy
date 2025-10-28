@@ -96,6 +96,17 @@ function switchPhase(phase) {
 
   state.currentPhase = phase;
   
+  // Phase 4に入った時に参考資料を読み込む
+  if (phase === 4) {
+    // FAQと患者指導資料を読み込む
+    if (typeof loadFAQs === 'function') {
+      loadFAQs();
+    }
+    if (typeof loadEducationMaterials === 'function') {
+      loadEducationMaterials();
+    }
+  }
+  
   // ページトップにスクロール
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -846,4 +857,217 @@ function restoreFormData() {
     document.getElementById('medicationSupport').value = state.formData.recommendations.medication_support || '';
     document.getElementById('followUpPlan').value = state.formData.recommendations.follow_up_plan || '';
   }
+}
+
+// ============================================
+// 参考資料機能
+// ============================================
+
+// 参考資料タブの初期化
+document.addEventListener('DOMContentLoaded', () => {
+  // タブ切り替え
+  const faqTabBtn = document.getElementById('faqTabBtn');
+  const educationTabBtn = document.getElementById('educationTabBtn');
+  
+  if (faqTabBtn) {
+    faqTabBtn.addEventListener('click', () => switchReferenceTab('faq'));
+  }
+  
+  if (educationTabBtn) {
+    educationTabBtn.addEventListener('click', () => switchReferenceTab('education'));
+  }
+
+  // FAQカテゴリフィルター
+  const faqCategoryFilter = document.getElementById('faqCategoryFilter');
+  if (faqCategoryFilter) {
+    faqCategoryFilter.addEventListener('change', loadFAQs);
+  }
+
+  // 患者指導資料フィルター
+  const educationDiseaseFilter = document.getElementById('educationDiseaseFilter');
+  const educationCategoryFilter = document.getElementById('educationCategoryFilter');
+  const educationQuestionTypeFilter = document.getElementById('educationQuestionTypeFilter');
+  
+  if (educationDiseaseFilter) {
+    educationDiseaseFilter.addEventListener('change', loadEducationMaterials);
+  }
+  if (educationCategoryFilter) {
+    educationCategoryFilter.addEventListener('change', loadEducationMaterials);
+  }
+  if (educationQuestionTypeFilter) {
+    educationQuestionTypeFilter.addEventListener('change', loadEducationMaterials);
+  }
+
+  // 初回データロード
+  loadFAQs();
+  loadEducationMaterials();
+});
+
+// 参考資料タブ切り替え
+function switchReferenceTab(tab) {
+  const faqTabBtn = document.getElementById('faqTabBtn');
+  const educationTabBtn = document.getElementById('educationTabBtn');
+  const faqContent = document.getElementById('faqContent');
+  const educationContent = document.getElementById('educationContent');
+
+  if (tab === 'faq') {
+    // FAQタブをアクティブに
+    faqTabBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+    faqTabBtn.classList.remove('text-gray-600');
+    educationTabBtn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+    educationTabBtn.classList.add('text-gray-600');
+    
+    faqContent.classList.remove('hidden');
+    educationContent.classList.add('hidden');
+  } else {
+    // 患者指導資料タブをアクティブに
+    educationTabBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+    educationTabBtn.classList.remove('text-gray-600');
+    faqTabBtn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+    faqTabBtn.classList.add('text-gray-600');
+    
+    educationContent.classList.remove('hidden');
+    faqContent.classList.add('hidden');
+  }
+}
+
+// FAQを読み込んで表示
+async function loadFAQs() {
+  const faqList = document.getElementById('faqList');
+  const category = document.getElementById('faqCategoryFilter').value;
+  
+  faqList.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>読み込み中...</p></div>';
+
+  try {
+    let url = '/api/faqs';
+    if (category) {
+      url += `?category=${encodeURIComponent(category)}`;
+    }
+
+    const response = await axios.get(url);
+    const faqs = response.data;
+
+    if (faqs.length === 0) {
+      faqList.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="fas fa-info-circle text-2xl mb-2"></i><p>該当するFAQが見つかりませんでした。</p></div>';
+      return;
+    }
+
+    faqList.innerHTML = faqs.map(faq => `
+      <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+        <div class="flex items-start justify-between mb-2">
+          <h4 class="font-semibold text-gray-800 flex-1">
+            <i class="fas fa-question-circle text-blue-500 mr-2"></i>
+            ${escapeHtml(faq.question)}
+          </h4>
+          <span class="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">${getCategoryLabel(faq.category)}</span>
+        </div>
+        <div class="text-sm text-gray-700 mt-2 pl-6">
+          <i class="fas fa-arrow-right text-green-500 mr-2"></i>
+          ${escapeHtml(faq.answer)}
+        </div>
+      </div>
+    `).join('');
+
+  } catch (error) {
+    console.error('FAQ読み込みエラー:', error);
+    faqList.innerHTML = '<div class="text-center text-red-500 py-8"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><p>FAQの読み込みに失敗しました。</p></div>';
+  }
+}
+
+// 患者指導資料を読み込んで表示
+async function loadEducationMaterials() {
+  const educationList = document.getElementById('educationList');
+  const diseaseId = document.getElementById('educationDiseaseFilter').value;
+  const category = document.getElementById('educationCategoryFilter').value;
+  const questionType = document.getElementById('educationQuestionTypeFilter').value;
+  
+  educationList.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>読み込み中...</p></div>';
+
+  try {
+    let url = '/api/education-materials?';
+    const params = [];
+    if (diseaseId) params.push(`disease_id=${diseaseId}`);
+    if (category) params.push(`category=${encodeURIComponent(category)}`);
+    if (questionType) params.push(`question_type=${encodeURIComponent(questionType)}`);
+    url += params.join('&');
+
+    const response = await axios.get(url);
+    const materials = response.data;
+
+    if (materials.length === 0) {
+      educationList.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="fas fa-info-circle text-2xl mb-2"></i><p>該当する患者指導資料が見つかりませんでした。</p></div>';
+      return;
+    }
+
+    educationList.innerHTML = materials.map(material => `
+      <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+        <div class="flex items-start justify-between mb-2">
+          <h4 class="font-semibold text-gray-800 flex-1">
+            <i class="fas fa-graduation-cap text-green-500 mr-2"></i>
+            ${escapeHtml(material.title)}
+          </h4>
+          <div class="ml-2 flex gap-1">
+            ${material.category ? `<span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">${getEducationCategoryLabel(material.category)}</span>` : ''}
+            ${material.question_type ? `<span class="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded-full">${getQuestionTypeLabel(material.question_type)}</span>` : ''}
+          </div>
+        </div>
+        <div class="text-sm text-gray-700 mt-2 pl-6 whitespace-pre-line">
+          ${escapeHtml(material.content)}
+        </div>
+        ${material.answer_summary ? `
+          <div class="text-xs text-gray-600 mt-3 pl-6 bg-gray-50 p-2 rounded italic">
+            💡 ポイント: ${escapeHtml(material.answer_summary)}
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+
+  } catch (error) {
+    console.error('患者指導資料読み込みエラー:', error);
+    educationList.innerHTML = '<div class="text-center text-red-500 py-8"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><p>患者指導資料の読み込みに失敗しました。</p></div>';
+  }
+}
+
+// カテゴリラベル変換
+function getCategoryLabel(category) {
+  const labels = {
+    'hypertension_general': '高血圧-一般',
+    'hypertension_medication': '高血圧-服薬',
+    'diabetes_general': '糖尿病-一般',
+    'diabetes_lifestyle': '糖尿病-生活',
+    'heart_failure_general': '心不全-一般',
+    'heart_failure_lifestyle': '心不全-生活',
+    'dyslipidemia_general': '脂質異常症-一般',
+    'ckd_general': 'CKD-一般',
+    'arrhythmia_general': '不整脈-一般'
+  };
+  return labels[category] || category;
+}
+
+function getEducationCategoryLabel(category) {
+  const labels = {
+    'lifestyle': '生活習慣',
+    'monitoring': 'モニタリング',
+    'medication': '服薬',
+    'diet': '食事',
+    'exercise': '運動'
+  };
+  return labels[category] || category;
+}
+
+function getQuestionTypeLabel(type) {
+  const labels = {
+    'basic_knowledge': '基礎知識',
+    'patient_concern': '患者の懸念',
+    'lifestyle_guidance': '生活指導'
+  };
+  return labels[type] || type;
+}
+
+// HTMLエスケープ（XSS対策）
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
