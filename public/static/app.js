@@ -2,6 +2,7 @@
 
 // グローバル状態管理
 const state = {
+  documentType: null, // 'medication_report', 'heart_failure_followup', 'discharge_summary'
   currentPhase: 1,
   medications: [],
   interactions: [],
@@ -14,18 +15,58 @@ const state = {
     clinical: {},
     adverse: {},
     pharmaceutical: {},
-    recommendations: {}
+    recommendations: {},
+    heartFailureFollowup: {}, // 心不全フォローアップデータ
+    dischargeSummary: {} // 退院時サマリーデータ
   }
 };
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
+  initializeDocumentSelection();
   initializeEventListeners();
   loadMedicationsCache();
-  
-  // 初回薬剤入力フォーム追加
-  addMedicationForm();
 });
+
+// ドキュメント選択機能の初期化
+function initializeDocumentSelection() {
+  const selectionScreen = document.getElementById('documentSelection');
+  const workspace = document.getElementById('formWorkspace');
+  
+  // 服薬情報提供書選択
+  document.getElementById('selectMedicationReport')?.addEventListener('click', () => {
+    state.documentType = 'medication_report';
+    showWorkspace();
+    // 初回薬剤入力フォーム追加
+    addMedicationForm();
+  });
+  
+  // 心不全フォローアップ選択
+  document.getElementById('selectHeartFailureFollowup')?.addEventListener('click', () => {
+    state.documentType = 'heart_failure_followup';
+    showWorkspace();
+    setupHeartFailureFollowupForm();
+  });
+  
+  // 退院時薬剤管理サマリー選択
+  document.getElementById('selectDischargeSummary')?.addEventListener('click', () => {
+    state.documentType = 'discharge_summary';
+    showWorkspace();
+    setupDischargeSummaryForm();
+  });
+  
+  // 書類選択に戻る
+  document.getElementById('backToSelection')?.addEventListener('click', () => {
+    if (confirm('入力内容がクリアされますが、よろしいですか？')) {
+      location.reload();
+    }
+  });
+  
+  function showWorkspace() {
+    selectionScreen.classList.add('hidden');
+    workspace.classList.remove('hidden');
+  }
+}
 
 // イベントリスナー初期化
 function initializeEventListeners() {
@@ -1072,4 +1113,575 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// ============================================
+// 心不全フォローアップシート機能
+// ============================================
+
+function setupHeartFailureFollowupForm() {
+  const phase1 = document.getElementById('phase1');
+  
+  phase1.innerHTML = `
+    <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
+      <i class="fas fa-heart-pulse mr-2 text-green-600"></i>
+      心不全フォローアップシート
+    </h2>
+
+    <!-- 基本情報 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">基本情報</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">確認方法 *</label>
+          <select id="hfConfirmationMethod" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            <option value="">選択してください</option>
+            <option value="来局">来局</option>
+            <option value="電話">電話</option>
+            <option value="訪問">訪問</option>
+            <option value="オンライン">オンライン</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">薬局名 *</label>
+          <input type="text" id="hfPharmacyName" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: ○○調剤薬局">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">担当薬剤師 *</label>
+          <input type="text" id="hfPharmacistName" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 山田太郎">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">確認日</label>
+          <input type="date" id="hfFollowupDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+      </div>
+    </div>
+
+    <!-- 治療上の問題点 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">治療上の問題点</h3>
+      <textarea id="hfTherapyIssues" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: アドヒアランス良好、副作用なし"></textarea>
+    </div>
+
+    <!-- 心不全症状チェック -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">心不全症状の確認</h3>
+      <div class="space-y-4">
+        <!-- 残薬 -->
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="hfHasRemainingMeds" class="mr-2">
+            <span class="font-medium">残薬あり</span>
+          </label>
+        </div>
+        
+        <!-- 浮腫 -->
+        <div>
+          <label class="flex items-center mb-2">
+            <input type="checkbox" id="hfHasEdema" class="mr-2">
+            <span class="font-medium">浮腫あり</span>
+          </label>
+          <input type="text" id="hfEdemaLocation" class="ml-6 w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg" placeholder="浮腫の部位（例: 両下肢）">
+        </div>
+        
+        <!-- 呼吸困難 -->
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="hfHasDyspnea" class="mr-2">
+            <span class="font-medium">呼吸困難あり</span>
+          </label>
+        </div>
+        
+        <!-- 食欲不振 -->
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="hfHasAppetiteLoss" class="mr-2">
+            <span class="font-medium">食欲不振あり</span>
+          </label>
+        </div>
+        
+        <!-- ストレス -->
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="hfHasStress" class="mr-2">
+            <span class="font-medium">ストレスあり</span>
+          </label>
+        </div>
+        
+        <!-- 他院からの処方 -->
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="hfHasOtherHospitalMeds" class="mr-2">
+            <span class="font-medium">他院からの処方薬あり</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- バイタルサイン -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">バイタルサイン</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">血圧 (mmHg)</label>
+          <input type="text" id="hfBloodPressure" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 120/80">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">体重 (kg)</label>
+          <input type="number" step="0.1" id="hfBodyWeight" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 65.5">
+        </div>
+      </div>
+    </div>
+
+    <!-- 薬剤師評価 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">薬剤師評価</h3>
+      <textarea id="hfAssessment" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 心不全増悪の兆候なし。予後改善薬の導入継続中。"></textarea>
+    </div>
+
+    <!-- 介入内容 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">介入内容</h3>
+      <textarea id="hfIntervention" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 塩分制限の重要性を再度説明。体重増加時の受診勧奨を指導。"></textarea>
+    </div>
+
+    <div class="flex justify-end">
+      <button id="hfGeneratePreviewBtn" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+        プレビュー生成 <i class="fas fa-eye ml-2"></i>
+      </button>
+    </div>
+  `;
+  
+  // プレビュー生成ボタン
+  document.getElementById('hfGeneratePreviewBtn').addEventListener('click', generateHeartFailureFollowupPreview);
+  
+  // Phase 2-4を非表示
+  document.getElementById('phase2').classList.add('hidden');
+  document.getElementById('phase3').classList.add('hidden');
+  document.getElementById('phase4').classList.add('hidden');
+  
+  // ナビゲーション調整
+  document.querySelectorAll('.phase-nav[data-phase="2"], .phase-nav[data-phase="3"], .phase-nav[data-phase="4"]').forEach(nav => {
+    nav.style.display = 'none';
+  });
+}
+
+function generateHeartFailureFollowupPreview() {
+  // データ収集
+  state.formData.heartFailureFollowup = {
+    confirmationMethod: document.getElementById('hfConfirmationMethod').value,
+    pharmacyName: document.getElementById('hfPharmacyName').value,
+    pharmacistName: document.getElementById('hfPharmacistName').value,
+    followupDate: document.getElementById('hfFollowupDate').value,
+    therapyIssues: document.getElementById('hfTherapyIssues').value,
+    hasRemainingMeds: document.getElementById('hfHasRemainingMeds').checked,
+    hasEdema: document.getElementById('hfHasEdema').checked,
+    edemaLocation: document.getElementById('hfEdemaLocation').value,
+    hasDyspnea: document.getElementById('hfHasDyspnea').checked,
+    hasAppetiteLoss: document.getElementById('hfHasAppetiteLoss').checked,
+    hasStress: document.getElementById('hfHasStress').checked,
+    hasOtherHospitalMeds: document.getElementById('hfHasOtherHospitalMeds').checked,
+    bloodPressure: document.getElementById('hfBloodPressure').value,
+    bodyWeight: document.getElementById('hfBodyWeight').value,
+    assessment: document.getElementById('hfAssessment').value,
+    intervention: document.getElementById('hfIntervention').value
+  };
+  
+  // Phase 5に切り替え
+  switchPhase(5);
+  
+  // プレビュー生成
+  const preview = document.getElementById('reportPreview');
+  const data = state.formData.heartFailureFollowup;
+  
+  preview.innerHTML = `
+    <style>
+      @page { margin: 15mm; size: A4; }
+      body { font-size: 10px; line-height: 1.4; }
+      .report-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+      .report-section { margin-bottom: 12px; page-break-inside: avoid; }
+      .report-section h3 { font-size: 12px; font-weight: bold; background: #f0f0f0; padding: 4px 6px; margin-bottom: 6px; }
+      .report-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 10px; }
+      .report-table td { padding: 4px 6px; border: 1px solid #ddd; vertical-align: top; line-height: 1.4; }
+      .report-table td:first-child { font-weight: bold; background: #f9f9f9; width: 28%; }
+      .checkbox-list { margin: 4px 0; }
+      .checkbox-item { display: inline-block; margin-right: 16px; }
+    </style>
+
+    <div class="report-title">心不全患者フォローアップシート</div>
+
+    <div class="report-section">
+      <h3>基本情報</h3>
+      <table class="report-table">
+        <tr>
+          <td>確認日</td>
+          <td>${data.followupDate || '-'}</td>
+        </tr>
+        <tr>
+          <td>確認方法</td>
+          <td>${data.confirmationMethod || '-'}</td>
+        </tr>
+        <tr>
+          <td>薬局・薬剤師</td>
+          <td>${data.pharmacyName || '-'} / ${data.pharmacistName || '-'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>治療上の問題点</h3>
+      <table class="report-table">
+        <tr>
+          <td>問題点</td>
+          <td>${data.therapyIssues || 'なし'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>心不全症状の確認</h3>
+      <table class="report-table">
+        <tr>
+          <td>症状チェック</td>
+          <td>
+            <div class="checkbox-list">
+              <span class="checkbox-item">${data.hasRemainingMeds ? '☑' : '☐'} 残薬あり</span>
+              <span class="checkbox-item">${data.hasEdema ? '☑' : '☐'} 浮腫あり${data.edemaLocation ? ' (' + data.edemaLocation + ')' : ''}</span>
+              <span class="checkbox-item">${data.hasDyspnea ? '☑' : '☐'} 呼吸困難あり</span>
+              <span class="checkbox-item">${data.hasAppetiteLoss ? '☑' : '☐'} 食欲不振あり</span>
+              <span class="checkbox-item">${data.hasStress ? '☑' : '☐'} ストレスあり</span>
+              <span class="checkbox-item">${data.hasOtherHospitalMeds ? '☑' : '☐'} 他院処方あり</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>バイタルサイン</h3>
+      <table class="report-table">
+        <tr>
+          <td>血圧・体重</td>
+          <td>血圧: ${data.bloodPressure || '-'} mmHg / 体重: ${data.bodyWeight || '-'} kg</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>薬剤師評価</h3>
+      <table class="report-table">
+        <tr>
+          <td>評価</td>
+          <td>${data.assessment || '-'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>介入内容</h3>
+      <table class="report-table">
+        <tr>
+          <td>介入</td>
+          <td>${data.intervention || '-'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section" style="margin-top: 10px; font-size: 8px; color: #666;">
+      <p style="margin: 0;"><strong>注意事項：</strong> 本シートは薬剤師による心不全患者のフォローアップ記録です。</p>
+    </div>
+  `;
+}
+
+// ============================================
+// 退院時薬剤管理サマリー機能
+// ============================================
+
+function setupDischargeSummaryForm() {
+  const phase1 = document.getElementById('phase1');
+  
+  phase1.innerHTML = `
+    <h2 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-3">
+      <i class="fas fa-hospital-user mr-2 text-purple-600"></i>
+      退院時薬剤管理サマリー
+    </h2>
+
+    <!-- 基本情報 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">基本情報</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">医療機関名 *</label>
+          <input type="text" id="dsHospitalName" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: ○○病院">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">退院日</label>
+          <input type="date" id="dsDischargeDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">薬局名 *</label>
+          <input type="text" id="dsPharmacyName" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: ○○調剤薬局">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">担当薬剤師 *</label>
+          <input type="text" id="dsPharmacistName" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 山田太郎">
+        </div>
+      </div>
+    </div>
+
+    <!-- 服薬管理 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">服薬管理</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">服薬管理者</label>
+          <select id="dsMedicationManager" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            <option value="">選択してください</option>
+            <option value="患者本人">患者本人</option>
+            <option value="配偶者">配偶者</option>
+            <option value="子">子</option>
+            <option value="その他家族">その他家族</option>
+            <option value="介護者">介護者</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">推奨する調剤方法</label>
+          <textarea id="dsRecommendedDispensing" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 一包化調剤、日付印字"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">服薬管理方法</label>
+          <textarea id="dsMedicationManagement" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: お薬カレンダー使用、家族による声かけ"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">服薬アドヒアランス</label>
+          <textarea id="dsMedicationAdherence" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 良好、飲み忘れ週1回程度"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 心不全予後改善薬の導入状況 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">心不全予後改善薬の導入状況</h3>
+      <div id="prognosticDrugsList" class="space-y-3">
+        <div class="text-center text-gray-500 py-4">
+          <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+          <p>読み込み中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 心不全管理 -->
+    <div class="mb-8">
+      <h3 class="text-xl font-semibold mb-4 text-gray-700">心不全管理情報</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">心不全ステージ</label>
+          <select id="dsHeartFailureStage" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            <option value="">選択してください</option>
+            <option value="Stage A">Stage A (危険因子あり)</option>
+            <option value="Stage B">Stage B (器質的心疾患あり)</option>
+            <option value="Stage C">Stage C (心不全症状あり)</option>
+            <option value="Stage D">Stage D (治療抵抗性心不全)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">LVEF (%)</label>
+          <input type="number" step="0.1" id="dsLVEF" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 35.0">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">水分制限</label>
+          <input type="text" id="dsFluidRestriction" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 1500mL/日">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">増悪因子</label>
+          <input type="text" id="dsExacerbationFactors" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="例: 感染、不整脈、塩分過多">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button id="dsGeneratePreviewBtn" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition">
+        プレビュー生成 <i class="fas fa-eye ml-2"></i>
+      </button>
+    </div>
+  `;
+  
+  // 予後改善薬リスト読み込み
+  loadPrognosticDrugs();
+  
+  // プレビュー生成ボタン
+  document.getElementById('dsGeneratePreviewBtn').addEventListener('click', generateDischargeSummaryPreview);
+  
+  // Phase 2-4を非表示
+  document.getElementById('phase2').classList.add('hidden');
+  document.getElementById('phase3').classList.add('hidden');
+  document.getElementById('phase4').classList.add('hidden');
+  
+  // ナビゲーション調整
+  document.querySelectorAll('.phase-nav[data-phase="2"], .phase-nav[data-phase="3"], .phase-nav[data-phase="4"]').forEach(nav => {
+    nav.style.display = 'none';
+  });
+}
+
+async function loadPrognosticDrugs() {
+  const container = document.getElementById('prognosticDrugsList');
+  
+  try {
+    const response = await axios.get('/api/hf-prognostic-drugs');
+    const drugs = response.data;
+    
+    container.innerHTML = drugs.map(drug => `
+      <div class="border border-gray-300 rounded-lg p-4 bg-gray-50">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <h4 class="font-semibold text-gray-800">${drug.drug_class_ja}</h4>
+            <p class="text-sm text-gray-600 mt-1">${drug.description || ''}</p>
+          </div>
+          <div class="ml-4">
+            <select id="ds_drug_${drug.id}" class="px-3 py-1 border border-gray-300 rounded">
+              <option value="">未選択</option>
+              <option value="導入済み">導入済み</option>
+              <option value="導入予定">導入予定</option>
+              <option value="禁忌・不耐">禁忌・不耐</option>
+              <option value="検討中">検討中</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('予後改善薬読み込みエラー:', error);
+    container.innerHTML = '<div class="text-center text-red-500 py-4"><p>データの読み込みに失敗しました。</p></div>';
+  }
+}
+
+function generateDischargeSummaryPreview() {
+  // データ収集
+  const prognosticDrugs = {};
+  document.querySelectorAll('[id^="ds_drug_"]').forEach(select => {
+    const drugName = select.closest('.border').querySelector('h4').textContent;
+    if (select.value) {
+      prognosticDrugs[drugName] = select.value;
+    }
+  });
+  
+  state.formData.dischargeSummary = {
+    hospitalName: document.getElementById('dsHospitalName').value,
+    dischargeDate: document.getElementById('dsDischargeDate').value,
+    pharmacyName: document.getElementById('dsPharmacyName').value,
+    pharmacistName: document.getElementById('dsPharmacistName').value,
+    medicationManager: document.getElementById('dsMedicationManager').value,
+    recommendedDispensing: document.getElementById('dsRecommendedDispensing').value,
+    medicationManagement: document.getElementById('dsMedicationManagement').value,
+    medicationAdherence: document.getElementById('dsMedicationAdherence').value,
+    prognosticDrugs: prognosticDrugs,
+    heartFailureStage: document.getElementById('dsHeartFailureStage').value,
+    lvef: document.getElementById('dsLVEF').value,
+    fluidRestriction: document.getElementById('dsFluidRestriction').value,
+    exacerbationFactors: document.getElementById('dsExacerbationFactors').value
+  };
+  
+  // Phase 5に切り替え
+  switchPhase(5);
+  
+  // プレビュー生成
+  const preview = document.getElementById('reportPreview');
+  const data = state.formData.dischargeSummary;
+  
+  const prognosticDrugsHtml = Object.keys(data.prognosticDrugs).length > 0 
+    ? Object.entries(data.prognosticDrugs).map(([drug, status]) => 
+        `<div style="margin-bottom: 4px;"><strong>${drug}:</strong> ${status}</div>`
+      ).join('')
+    : '-';
+  
+  preview.innerHTML = `
+    <style>
+      @page { margin: 15mm; size: A4; }
+      body { font-size: 10px; line-height: 1.4; }
+      .report-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+      .report-section { margin-bottom: 12px; page-break-inside: avoid; }
+      .report-section h3 { font-size: 12px; font-weight: bold; background: #f0f0f0; padding: 4px 6px; margin-bottom: 6px; }
+      .report-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 10px; }
+      .report-table td { padding: 4px 6px; border: 1px solid #ddd; vertical-align: top; line-height: 1.4; }
+      .report-table td:first-child { font-weight: bold; background: #f9f9f9; width: 28%; }
+    </style>
+
+    <div class="report-title">退院時薬剤管理サマリー</div>
+
+    <div class="report-section">
+      <h3>基本情報</h3>
+      <table class="report-table">
+        <tr>
+          <td>退院日</td>
+          <td>${data.dischargeDate || '-'}</td>
+        </tr>
+        <tr>
+          <td>退院元医療機関</td>
+          <td>${data.hospitalName || '-'}</td>
+        </tr>
+        <tr>
+          <td>薬局・薬剤師</td>
+          <td>${data.pharmacyName || '-'} / ${data.pharmacistName || '-'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>服薬管理</h3>
+      <table class="report-table">
+        <tr>
+          <td>服薬管理者</td>
+          <td>${data.medicationManager || '-'}</td>
+        </tr>
+        <tr>
+          <td>推奨調剤方法</td>
+          <td>${data.recommendedDispensing || '-'}</td>
+        </tr>
+        <tr>
+          <td>服薬管理方法</td>
+          <td>${data.medicationManagement || '-'}</td>
+        </tr>
+        <tr>
+          <td>服薬アドヒアランス</td>
+          <td>${data.medicationAdherence || '-'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>心不全予後改善薬の導入状況</h3>
+      <table class="report-table">
+        <tr>
+          <td>導入状況</td>
+          <td>${prognosticDrugsHtml}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>心不全管理情報</h3>
+      <table class="report-table">
+        <tr>
+          <td>心不全ステージ</td>
+          <td>${data.heartFailureStage || '-'}</td>
+        </tr>
+        <tr>
+          <td>LVEF</td>
+          <td>${data.lvef ? data.lvef + '%' : '-'}</td>
+        </tr>
+        <tr>
+          <td>水分制限</td>
+          <td>${data.fluidRestriction || '-'}</td>
+        </tr>
+        <tr>
+          <td>増悪因子</td>
+          <td>${data.exacerbationFactors || '-'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="report-section" style="margin-top: 10px; font-size: 8px; color: #666;">
+      <p style="margin: 0;"><strong>注意事項：</strong> 本サマリーは退院時の薬剤管理状況をまとめたものです。継続的なフォローアップをお願いいたします。</p>
+    </div>
+  `;
 }

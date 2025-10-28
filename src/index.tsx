@@ -64,10 +64,53 @@ app.get('/', (c) => {
 
     <!-- メインコンテンツ -->
     <main class="container mx-auto px-4 py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- ドキュメント選択画面 -->
+        <div id="documentSelection" class="mb-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">
+                    <i class="fas fa-file-medical mr-2 text-blue-600"></i>
+                    作成する書類を選択してください
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- 服薬情報提供書 -->
+                    <button id="selectMedicationReport" class="doc-type-btn p-6 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left">
+                        <div class="text-center">
+                            <i class="fas fa-file-medical text-4xl text-blue-600 mb-3"></i>
+                            <h3 class="font-bold text-lg mb-2">服薬情報提供書</h3>
+                            <p class="text-sm text-gray-600">医療機関へ提出する<br>薬学的評価レポート</p>
+                        </div>
+                    </button>
+                    
+                    <!-- 心不全フォローアップシート -->
+                    <button id="selectHeartFailureFollowup" class="doc-type-btn p-6 border-2 border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-left">
+                        <div class="text-center">
+                            <i class="fas fa-heart-pulse text-4xl text-green-600 mb-3"></i>
+                            <h3 class="font-bold text-lg mb-2">心不全フォローアップ</h3>
+                            <p class="text-sm text-gray-600">心不全患者の<br>継続的な状態評価</p>
+                        </div>
+                    </button>
+                    
+                    <!-- 退院時薬剤管理サマリー -->
+                    <button id="selectDischargeSummary" class="doc-type-btn p-6 border-2 border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition text-left">
+                        <div class="text-center">
+                            <i class="fas fa-hospital-user text-4xl text-purple-600 mb-3"></i>
+                            <h3 class="font-bold text-lg mb-2">退院時薬剤管理サマリー</h3>
+                            <p class="text-sm text-gray-600">退院時の薬剤管理<br>情報提供書</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="formWorkspace" class="hidden grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- サイドバー：フェーズナビゲーション -->
             <aside class="no-print lg:col-span-1">
                 <div class="bg-white rounded-lg shadow-md p-6 sticky top-4">
+                    <div class="mb-4 pb-4 border-b">
+                        <button id="backToSelection" class="text-sm text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-arrow-left mr-2"></i>書類選択に戻る
+                        </button>
+                    </div>
                     <h2 class="text-lg font-bold mb-4 text-gray-800">
                         <i class="fas fa-list-check mr-2"></i>入力フェーズ
                     </h2>
