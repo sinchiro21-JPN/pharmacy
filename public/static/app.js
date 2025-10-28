@@ -529,25 +529,27 @@ function generateReportPreview() {
       `<li><strong>${int.med_a_name} × ${int.med_b_name}</strong> (${int.severity === 'major' ? '重大' : int.severity === 'moderate' ? '中等度' : '軽度'}): ${int.clinical_effects || ''}</li>`
     ).join('');
     interactionSection = `
-      <div class="mt-4">
-        <strong>検出された相互作用：</strong>
-        <ul class="list-disc ml-6 mt-2">${interactionItems}</ul>
-      </div>
+      <strong>検出された相互作用：</strong>
+      <ul style="margin: 2px 0 0 12px; padding: 0; font-size: 9px;">${interactionItems}</ul>
     `;
   }
 
   const reportHTML = `
     <style>
-      @page { margin: 20mm; }
-      .report-title { font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-      .report-section { margin-bottom: 20px; page-break-inside: avoid; }
-      .report-section h3 { font-size: 16px; font-weight: bold; background: #f0f0f0; padding: 8px; margin-bottom: 10px; }
-      .report-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-      .report-table td { padding: 8px; border: 1px solid #ddd; vertical-align: top; }
-      .report-table td:first-child { font-weight: bold; background: #f9f9f9; width: 30%; }
-      .medication-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-      .medication-table th { background: #e0e0e0; padding: 8px; border: 1px solid #999; }
-      .medication-table td { padding: 6px; border: 1px solid #ddd; }
+      @page { margin: 15mm; size: A4; }
+      body { font-size: 10px; line-height: 1.4; }
+      .report-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+      .report-section { margin-bottom: 12px; page-break-inside: avoid; }
+      .report-section h3 { font-size: 12px; font-weight: bold; background: #f0f0f0; padding: 4px 6px; margin-bottom: 6px; }
+      .report-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 10px; }
+      .report-table td { padding: 4px 6px; border: 1px solid #ddd; vertical-align: top; line-height: 1.4; }
+      .report-table td:first-child { font-weight: bold; background: #f9f9f9; width: 28%; }
+      .medication-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 6px; }
+      .medication-table th { background: #e0e0e0; padding: 4px; border: 1px solid #999; font-weight: bold; }
+      .medication-table td { padding: 3px 4px; border: 1px solid #ddd; line-height: 1.3; }
+      .medication-table small { font-size: 8px; }
+      ul { margin: 4px 0; padding-left: 16px; }
+      ul li { margin-bottom: 2px; line-height: 1.3; }
     </style>
 
     <div class="report-title">服薬情報提供書</div>
@@ -651,21 +653,21 @@ function generateReportPreview() {
         <tr>
           <td>バイタルサイン</td>
           <td>
-            血圧: ${state.formData.clinical.vital_signs?.blood_pressure || '-'} mmHg<br>
-            心拍数: ${state.formData.clinical.vital_signs?.heart_rate || '-'} bpm<br>
-            体重: ${state.formData.clinical.vital_signs?.weight || '-'} kg<br>
-            血糖値: ${state.formData.clinical.vital_signs?.blood_glucose || '-'} mg/dL
-            ${state.formData.clinical.vital_signs?.other ? '<br>その他: ' + state.formData.clinical.vital_signs.other : ''}
+            血圧:${state.formData.clinical.vital_signs?.blood_pressure || '-'}mmHg / 
+            心拍数:${state.formData.clinical.vital_signs?.heart_rate || '-'}bpm / 
+            体重:${state.formData.clinical.vital_signs?.weight || '-'}kg / 
+            血糖値:${state.formData.clinical.vital_signs?.blood_glucose || '-'}mg/dL
+            ${state.formData.clinical.vital_signs?.other ? ' / その他: ' + state.formData.clinical.vital_signs.other : ''}
           </td>
         </tr>
         ${state.formData.adverse.suspected_symptoms ? `
         <tr>
           <td>副作用・有害事象</td>
           <td>
-            <strong>疑われる症状：</strong>${state.formData.adverse.suspected_symptoms}<br>
-            <strong>発現時期：</strong>${state.formData.adverse.onset_timing || '-'}<br>
-            <strong>重症度：</strong>${state.formData.adverse.severity === 'mild' ? '軽度' : state.formData.adverse.severity === 'moderate' ? '中等度' : state.formData.adverse.severity === 'severe' ? '重度' : '-'}<br>
-            <strong>因果関係：</strong>${state.formData.adverse.causality || '-'}
+            症状:${state.formData.adverse.suspected_symptoms} / 
+            発現:${state.formData.adverse.onset_timing || '-'} / 
+            重症度:${state.formData.adverse.severity === 'mild' ? '軽度' : state.formData.adverse.severity === 'moderate' ? '中等度' : state.formData.adverse.severity === 'severe' ? '重度' : '-'} / 
+            因果関係:${state.formData.adverse.causality || '-'}
           </td>
         </tr>
         ` : ''}
@@ -715,10 +717,10 @@ function generateReportPreview() {
       </table>
     </div>
 
-    <div class="report-section" style="margin-top: 30px; font-size: 12px; color: #666;">
-      <p><strong>注意事項：</strong></p>
-      <ul style="margin-left: 20px;">
-        <li>本情報提供書は薬剤師の専門的見解に基づくものですが、最終的な処方判断は医師が行ってください。</li>
+    <div class="report-section" style="margin-top: 10px; font-size: 8px; color: #666;">
+      <p style="margin: 0 0 4px 0;"><strong>注意事項：</strong></p>
+      <ul style="margin: 0; padding-left: 16px;">
+        <li style="margin-bottom: 2px;">本情報提供書は薬剤師の専門的見解に基づくものですが、最終的な処方判断は医師が行ってください。</li>
         <li>ご不明な点がございましたら、上記連絡先までお問い合わせください。</li>
       </ul>
     </div>
